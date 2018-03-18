@@ -41,6 +41,18 @@ class MoveToNearestBarrelAction(Action):
   def execute(self):
     MoveAction(self.previous_target_barrel.pos).execute()
 
+class MoveToNearestEnemyAction(Action):
+  def __init__(self):
+    self.previous_target_enemy = None
+
+  def can_execute(self, grid, turn, ship):
+    if self.previous_target_enemy == None or not isinstance(grid.get(self.previous_target_enemy.pos), Ship):
+      self.previous_target_enemy = grid.find_nearest(Ship, ships[i].pos, lambda s: not s.owner)
+    return self.previous_target_enemy != None
+
+  def execute(self):
+    MoveAction(self.previous_target_enemy.pos).execute()
+
 
 class ShotNearestEnemyAction(Action):
   def __init__(self):
@@ -173,7 +185,7 @@ def direction_to_pos(dir):
   return Pos(dx, dy)
 
 
-actions = [ShotNearestEnemyAction(), MoveToNearestBarrelAction()]
+actions = [ShotNearestEnemyAction(), MoveToNearestBarrelAction(), MoveToNearestEnemyAction()]
 turn = 0
 while True:
   ships = {}
