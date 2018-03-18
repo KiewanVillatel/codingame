@@ -8,7 +8,7 @@ grid = []
 
 
 class Action:
-  def can_execute(self, grid):
+  def can_execute(self, grid, turn, ship_pos):
     pass
 
   def execute(self):
@@ -19,7 +19,7 @@ class MoveAction(Action):
   def __init__(self, pos):
     self.pos = pos
 
-  def can_execute(self, grid):
+  def can_execute(self, grid, turn, ship_pos):
     return True
 
   def execute(self):
@@ -30,7 +30,7 @@ class MoveToNearestBarrelAction(Action):
   def __init__(self):
     self.previous_target_barrel = None
 
-  def can_execute(self, grid):
+  def can_execute(self, grid, turn, ship_pos):
     if self.previous_target_barrel == None or not isinstance(grid.get(self.previous_target_barrel.pos), Barrel):
       self.previous_target_barrel = grid.find_nearest(Barrel, ships[i].pos)
     return self.previous_target_barrel != None
@@ -39,13 +39,46 @@ class MoveToNearestBarrelAction(Action):
     MoveAction(self.previous_target_barrel.pos).execute()
 
 
+class ShotNearestEnemyAction(Action):
+  def __init__(self):
+    self.last_shot = -99999
+
+  def can_execute(self, grid, turn, ship_pos):
+    if turn - self.last_shot <= 2:
+      return False
+    self.target = grid.find_nearest(Ship, ship_pos, lambda s: not s.owner)
+    if ship_pos.dist_to(self.target.pos) > 10:
+      return False
+    self.last_shot = turn
+    return True
+
+  def execute(self):
+    print('FIRE ' + self.target.pos.to_string())
+
+
+class PlaceMineAction(Action):
+  def __init__(self):
+    self.last_mine = -99999
+
+  def can_execute(self, grid, turn, ship_pos):
+    if turn - self.last_mine <= 5:
+      return False
+    self.last_mine = turn
+    return True
+
+  def execute(self):
+    print('MINE')
+
+
 class Pos:
   def __init__(self, x, y):
     self.x = x
     self.y = y
 
   def dist_to(self, pos):
-    return math.sqrt((pos.x - self.x) ** 2 + (pos.y - self.y) ** 2)
+    dx = abs(pos.x - self.x)
+    dy = abs(pos.y - self.y)
+    return max(dx, dy) - min(dx, dy)
 
   def to_string(self):
     return str(self.x) + " " + str(self.y)
@@ -81,13 +114,13 @@ class Grid:
   def __init__(self):
     self.grid = [[Cell(Pos(i, j)) for j in range(21)] for i in range(23)]
 
-  def find_nearest(self, claz, pos):
+  def find_nearest(self, claz, pos, condition=None):
     min_dist = 99999999
     res = None
     for row in self.grid:
       for cell in row:
         dist = pos.dist_to(cell.pos)
-        if isinstance(cell, claz) and dist < min_dist:
+        if isinstance(cell, claz) and dist < min_dist and (condition == None or condition(cell)):
           res = cell
           min_dist = dist
     return res
@@ -99,7 +132,8 @@ class Grid:
     self.grid[pos.x][pos.y] = cell
 
 
-actions = [MoveToNearestBarrelAction()]
+actions = [ShotNearestEnemyAction(), MoveToNearestBarrelAction()]
+turn = 0
 while True:
   ships = {}
   grid = Grid()
@@ -117,7 +151,7 @@ while True:
     arg_4 = int(arg_4)
 
     if entity_type == 'SHIP':
-      cell = Ship(pos, arg_1, arg_2, arg_3, arg_4 == 0, entity_id)
+      cell = Ship(pos, arg_1, arg_2, arg_3, arg_4 == 1, entity_id)
       ships[i] = cell
     elif entity_type == 'MINE':
       cell = Mine(pos)
@@ -135,6 +169,7 @@ while True:
     # Any valid action, such as "WAIT" or "MOVE x y"
     print(ships[i].pos.to_string(), file=sys.stderr)
     for action in actions:
-      if action.can_execute(grid):
+      if action.can_execute(grid, turn, ships[i].pos):
         action.execute()
         break
+  turn += 1
