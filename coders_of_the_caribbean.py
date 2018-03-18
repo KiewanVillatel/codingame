@@ -12,6 +12,9 @@ class Pos:
     self.x = x
     self.y = y
 
+  def to_string(self):
+    return str(self.x) + " " + str(self.y)
+
 
 class Cell:
   def __init__(self, pos):
@@ -33,10 +36,15 @@ class Barrel(Cell):
     self.rum = rum
 
 
-grid = [[Cell(Pos(i, j)) for j in range(21)] for i in range(23)]
+def find_first_barrel(grid):
+  for row in grid:
+    for cell in row:
+      if isinstance(cell, Barrel):
+        return cell
 
 # game loop
 while True:
+  grid = [[Cell(Pos(i, j)) for j in range(21)] for i in range(23)]
   my_ship_count = int(input())  # the number of remaining ships
   entity_count = int(input())  # the number of entities (e.g. ships, mines or cannonballs)
   for i in range(entity_count):
@@ -59,4 +67,5 @@ while True:
     # To debug: print("Debug messages...", file=sys.stderr)
 
     # Any valid action, such as "WAIT" or "MOVE x y"
-    print("MOVE 11 10")
+    barrel = find_first_barrel(grid)
+    print("MOVE " + barrel.pos.to_string())
