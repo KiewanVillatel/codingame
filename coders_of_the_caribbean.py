@@ -1,5 +1,6 @@
 import sys
 import math
+import random
 
 
 def iround(x):
@@ -35,7 +36,7 @@ class MoveToNearestBarrelAction(Action):
 
   def can_execute(self, grid, turn, ship):
     if self.previous_target_barrel == None or not isinstance(grid.get(self.previous_target_barrel.pos), Barrel):
-      self.previous_target_barrel = grid.find_nearest(Barrel, ships[i].pos)
+      self.previous_target_barrel = grid.find_nearest(Barrel, ship.pos)
     return self.previous_target_barrel != None
 
   def execute(self):
@@ -47,11 +48,18 @@ class MoveToNearestEnemyAction(Action):
 
   def can_execute(self, grid, turn, ship):
     if self.previous_target_enemy == None or not isinstance(grid.get(self.previous_target_enemy.pos), Ship):
-      self.previous_target_enemy = grid.find_nearest(Ship, ships[i].pos, lambda s: not s.owner)
+      self.previous_target_enemy = grid.find_nearest(Ship, ship.pos, lambda s: not s.owner)
     return self.previous_target_enemy != None
 
   def execute(self):
     MoveAction(self.previous_target_enemy.pos).execute()
+
+class RandomMove(Action):
+  def can_execute(self, grid, turn, ship):
+    return True
+
+  def execute(self):
+    MoveAction(Pos(random.randint(19), random.randint(19))).execute()
 
 
 class ShotNearestEnemyAction(Action):
@@ -72,7 +80,7 @@ class ShotNearestEnemyAction(Action):
       target_y = target.pos.y + (i+1) * target.speed * target.rotation.y
       target_pos = Pos(target_x, target_y)
       t_shot = 1 + iround(target_pos.dist_to(ship.front_pos()) / 3)
-      if t_shot - i < 2:
+      if t_shot - i < 2 and grid.in_grid(target_pos):
         self.target = grid.get(Pos(target_x, target_y))
         break
 
@@ -178,6 +186,9 @@ class Grid:
   def update(self, pos, cell):
     self.grid[pos.x][pos.y] = cell
 
+  def in_grid(self, pos):
+    return pos.x <= 23 and pos.x >=0 and pos.y <=20 and pos.y >=0
+
 
 def direction_to_pos(dir):
   dx = 1 if dir in [1, 0, 5] else -1
@@ -185,7 +196,7 @@ def direction_to_pos(dir):
   return Pos(dx, dy)
 
 
-actions = [ShotNearestEnemyAction(), MoveToNearestBarrelAction(), MoveToNearestEnemyAction()]
+actions = [ShotNearestEnemyAction(), MoveToNearestBarrelAction(), MoveToNearestEnemyAction(), RandomMove()]
 turn = 0
 while True:
   ships = {}
