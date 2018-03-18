@@ -56,8 +56,8 @@ class ShotNearestEnemyAction(Action):
 
     self.target = None
     for i in range(3):
-      target_x = target.pos.x + i * target.speed * target.rotation.x
-      target_y = target.pos.y + i * target.speed * target.rotation.y
+      target_x = target.pos.x + (i+1) * target.speed * target.rotation.x
+      target_y = target.pos.y + (i+1) * target.speed * target.rotation.y
       target_pos = Pos(target_x, target_y)
       t_shot = 1 + iround(target_pos.dist_to(ship.front_pos()) / 3)
       if t_shot - i < 2:
