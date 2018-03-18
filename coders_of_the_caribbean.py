@@ -6,6 +6,11 @@ import math
 
 grid = []
 
+class Action:
+  @staticmethod
+  def move(pos):
+    print('MOVE ' + pos.to_string())
+
 
 class Pos:
   def __init__(self, x, y):
@@ -13,7 +18,7 @@ class Pos:
     self.y = y
 
   def dist_to(self, pos):
-    return math.sqrt(pos.x * self.x + pos.y * self.y)
+    return math.sqrt((pos.x - self.x)**2 + (pos.y - self.y)**2)
 
   def to_string(self):
     return str(self.x) + " " + str(self.y)
@@ -25,12 +30,13 @@ class Cell:
 
 
 class Ship(Cell):
-  def __init__(self, pos, rotation, speed, rum, owner):
+  def __init__(self, pos, rotation, speed, rum, owner, id):
     super().__init__(pos)
     self.rotation = rotation
     self.speed = speed
     self.rum = rum
     self.owner = owner
+    self.id = id
 
 
 class Barrel(Cell):
@@ -57,11 +63,14 @@ class Grid:
           min_dist = dist
     return res
 
+  def get(self, pos):
+    return self.grid[pos.x][pos.y]
+
   def update(self, pos, cell):
     self.grid[pos.x][pos.y] = cell
 
 
-# game loop
+previous_target_barrel = None
 while True:
   ships = {}
   grid = Grid()
@@ -79,12 +88,14 @@ while True:
     arg_4 = int(arg_4)
 
     if entity_type == 'SHIP':
-      cell = Ship(pos, arg_1, arg_2, arg_3, arg_4 == 0)
+      cell = Ship(pos, arg_1, arg_2, arg_3, arg_4 == 0, entity_id)
       ships[i] = cell
     elif entity_type == 'MINE':
       cell = Mine(pos)
-    else:
+    elif entity_type == 'BARREL':
       cell = Barrel(pos, arg_1)
+    else:
+      cell = Cell(pos)
 
     grid.update(pos, cell)
 
@@ -93,5 +104,7 @@ while True:
     # To debug: print("Debug messages...", file=sys.stderr)
 
     # Any valid action, such as "WAIT" or "MOVE x y"
-    barrel = grid.find_nearest(Barrel, ships[i].pos)
-    print("MOVE " + barrel.pos.to_string())
+    print(ships[i].pos.to_string(), file=sys.stderr)
+    if previous_target_barrel == None or not isinstance(grid.get(previous_target_barrel.pos), Barrel):
+      previous_target_barrel = grid.find_nearest(Barrel, ships[i].pos)
+    Action.move(previous_target_barrel.pos)
