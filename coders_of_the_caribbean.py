@@ -6,10 +6,37 @@ import math
 
 grid = []
 
+
 class Action:
-  @staticmethod
-  def move(pos):
-    print('MOVE ' + pos.to_string())
+  def can_execute(self, grid):
+    pass
+
+  def execute(self):
+    pass
+
+
+class MoveAction(Action):
+  def __init__(self, pos):
+    self.pos = pos
+
+  def can_execute(self, grid):
+    return True
+
+  def execute(self):
+    print('MOVE ' + self.pos.to_string())
+
+
+class MoveToNearestBarrelAction(Action):
+  def __init__(self):
+    self.previous_target_barrel = None
+
+  def can_execute(self, grid):
+    if self.previous_target_barrel == None or not isinstance(grid.get(self.previous_target_barrel.pos), Barrel):
+      self.previous_target_barrel = grid.find_nearest(Barrel, ships[i].pos)
+    return self.previous_target_barrel != None
+
+  def execute(self):
+    MoveAction(self.previous_target_barrel.pos).execute()
 
 
 class Pos:
@@ -18,7 +45,7 @@ class Pos:
     self.y = y
 
   def dist_to(self, pos):
-    return math.sqrt((pos.x - self.x)**2 + (pos.y - self.y)**2)
+    return math.sqrt((pos.x - self.x) ** 2 + (pos.y - self.y) ** 2)
 
   def to_string(self):
     return str(self.x) + " " + str(self.y)
@@ -44,9 +71,11 @@ class Barrel(Cell):
     super().__init__(pos)
     self.rum = rum
 
+
 class Mine(Cell):
   def __init__(self, pos):
     super().__init__(pos)
+
 
 class Grid:
   def __init__(self):
@@ -70,7 +99,7 @@ class Grid:
     self.grid[pos.x][pos.y] = cell
 
 
-previous_target_barrel = None
+actions = [MoveToNearestBarrelAction()]
 while True:
   ships = {}
   grid = Grid()
@@ -105,6 +134,7 @@ while True:
 
     # Any valid action, such as "WAIT" or "MOVE x y"
     print(ships[i].pos.to_string(), file=sys.stderr)
-    if previous_target_barrel == None or not isinstance(grid.get(previous_target_barrel.pos), Barrel):
-      previous_target_barrel = grid.find_nearest(Barrel, ships[i].pos)
-    Action.move(previous_target_barrel.pos)
+    for action in actions:
+      if action.can_execute(grid):
+        action.execute()
+        break
