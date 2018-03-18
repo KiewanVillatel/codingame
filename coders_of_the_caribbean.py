@@ -1,14 +1,17 @@
 import sys
 import math
 
-# Auto-generated code below aims at helping you parse
-# the standard input according to the problem statement.
+
+def iround(x):
+  """iround(number) -> integer
+  Round a number to the nearest integer."""
+  return int(round(x) - .5) + (x > 0)
 
 grid = []
 
 
 class Action:
-  def can_execute(self, grid, turn, ship_pos):
+  def can_execute(self, grid, turn, ship):
     pass
 
   def execute(self):
@@ -19,7 +22,7 @@ class MoveAction(Action):
   def __init__(self, pos):
     self.pos = pos
 
-  def can_execute(self, grid, turn, ship_pos):
+  def can_execute(self, grid, turn, ship):
     return True
 
   def execute(self):
@@ -30,7 +33,7 @@ class MoveToNearestBarrelAction(Action):
   def __init__(self):
     self.previous_target_barrel = None
 
-  def can_execute(self, grid, turn, ship_pos):
+  def can_execute(self, grid, turn, ship):
     if self.previous_target_barrel == None or not isinstance(grid.get(self.previous_target_barrel.pos), Barrel):
       self.previous_target_barrel = grid.find_nearest(Barrel, ships[i].pos)
     return self.previous_target_barrel != None
@@ -43,12 +46,32 @@ class ShotNearestEnemyAction(Action):
   def __init__(self):
     self.last_shot = -99999
 
-  def can_execute(self, grid, turn, ship_pos):
+  def can_execute(self, grid, turn, ship):
     if turn - self.last_shot <= 2:
       return False
-    self.target = grid.find_nearest(Ship, ship_pos, lambda s: not s.owner)
-    if ship_pos.dist_to(self.target.pos) > 10:
+    target = grid.find_nearest(Ship, ship.pos, lambda s: not s.owner)
+
+    if target is None:
       return False
+
+    self.target = None
+    for i in range(3):
+      target_x = target.pos.x + i * target.speed * target.rotation.x
+      target_y = target.pos.y + i * target.speed * target.rotation.y
+      target_pos = Pos(target_x, target_y)
+      t_shot = 1 + iround(target_pos.dist_to(ship.front_pos()) / 3)
+      if t_shot - i < 2:
+        self.target = grid.get(Pos(target_x, target_y))
+        break
+
+    if self.target is None:
+      return False
+
+    if ship.front_pos().dist_to(self.target.pos) > 10:
+      return False
+
+    print('shot', target.pos.to_string(), target.rotation.to_string(), self.target.pos.to_string(), file=sys.stderr)
+
     self.last_shot = turn
     return True
 
@@ -60,7 +83,7 @@ class PlaceMineAction(Action):
   def __init__(self):
     self.last_mine = -99999
 
-  def can_execute(self, grid, turn, ship_pos):
+  def can_execute(self, grid, turn, ship):
     if turn - self.last_mine <= 5:
       return False
     self.last_mine = turn
@@ -78,7 +101,13 @@ class Pos:
   def dist_to(self, pos):
     dx = abs(pos.x - self.x)
     dy = abs(pos.y - self.y)
-    return max(dx, dy) - min(dx, dy)
+    return max(dx, dy)
+
+  def plus(self, pos):
+    return Pos(self.x + pos.x, self.y + pos.y)
+
+  def minus(self, pos):
+    return Pos(self.x - pos.x, self.y - pos.y)
 
   def to_string(self):
     return str(self.x) + " " + str(self.y)
@@ -97,6 +126,12 @@ class Ship(Cell):
     self.rum = rum
     self.owner = owner
     self.id = id
+
+  def front_pos(self):
+    return self.pos.plus(self.rotation)
+
+  def back_pos(self):
+    return self.pos.minus(self.rotation)
 
 
 class Barrel(Cell):
@@ -132,6 +167,12 @@ class Grid:
     self.grid[pos.x][pos.y] = cell
 
 
+def direction_to_pos(dir):
+  dx = 1 if dir in [1, 0, 5] else -1
+  dy = 1 if dir in [4, 5] else -1 if dir in [2, 1] else 0
+  return Pos(dx, dy)
+
+
 actions = [ShotNearestEnemyAction(), MoveToNearestBarrelAction()]
 turn = 0
 while True:
@@ -151,7 +192,7 @@ while True:
     arg_4 = int(arg_4)
 
     if entity_type == 'SHIP':
-      cell = Ship(pos, arg_1, arg_2, arg_3, arg_4 == 1, entity_id)
+      cell = Ship(pos, direction_to_pos(arg_1), arg_2, arg_3, arg_4 == 1, entity_id)
       ships[i] = cell
     elif entity_type == 'MINE':
       cell = Mine(pos)
@@ -168,8 +209,12 @@ while True:
 
     # Any valid action, such as "WAIT" or "MOVE x y"
     print(ships[i].pos.to_string(), file=sys.stderr)
+
+    action_found = False
     for action in actions:
-      if action.can_execute(grid, turn, ships[i].pos):
+      if action.can_execute(grid, turn, ships[i]):
         action.execute()
+        action_found = True
         break
+    print('No action found', file=sys.stderr) if not action_found else None
   turn += 1
