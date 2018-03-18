@@ -59,7 +59,7 @@ class RandomMove(Action):
     return True
 
   def execute(self):
-    MoveAction(Pos(random.randint(19), random.randint(19))).execute()
+    MoveAction(Pos(random.randint(0, 19), random.randint(0, 19))).execute()
 
 
 class ShotNearestEnemyAction(Action):
@@ -187,7 +187,7 @@ class Grid:
     self.grid[pos.x][pos.y] = cell
 
   def in_grid(self, pos):
-    return pos.x <= 23 and pos.x >=0 and pos.y <=20 and pos.y >=0
+    return pos.x < 23 and pos.x >=0 and pos.y <21 and pos.y >=0
 
 
 def direction_to_pos(dir):
