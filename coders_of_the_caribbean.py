@@ -196,7 +196,7 @@ def direction_to_pos(dir):
   return Pos(dx, dy)
 
 
-actions = [ShotNearestEnemyAction(), MoveToNearestBarrelAction(), MoveToNearestEnemyAction(), RandomMove()]
+actions = [[ShotNearestEnemyAction(), MoveToNearestBarrelAction(), MoveToNearestEnemyAction(), RandomMove()] for _ in range(3)]
 turn = 0
 while True:
   ships = {}
@@ -234,7 +234,7 @@ while True:
     print(ships[i].pos.to_string(), file=sys.stderr)
 
     action_found = False
-    for action in actions:
+    for action in actions[i]:
       if action.can_execute(grid, turn, ships[i]):
         action.execute()
         action_found = True
