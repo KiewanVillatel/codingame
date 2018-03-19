@@ -36,8 +36,11 @@ class MoveToNearestBarrelAction(Action):
 
   def can_execute(self, grid, turn, ship):
     if self.previous_target_barrel == None or not isinstance(grid.get(self.previous_target_barrel.pos), Barrel):
-      self.previous_target_barrel = grid.find_nearest(Barrel, ship.pos)
-    return self.previous_target_barrel != None
+      self.previous_target_barrel = grid.find_nearest(Barrel, ship.pos, lambda b: b not in targeted_barrels)
+    if self.previous_target_barrel == None:
+      return False
+    targeted_barrels.append(self.previous_target_barrel)
+    return True
 
   def execute(self):
     MoveAction(self.previous_target_barrel.pos).execute()
@@ -195,10 +198,10 @@ def direction_to_pos(dir):
   dy = 1 if dir in [4, 5] else -1 if dir in [2, 1] else 0
   return Pos(dx, dy)
 
-
 actions = [[ShotNearestEnemyAction(), MoveToNearestBarrelAction(), MoveToNearestEnemyAction(), RandomMove()] for _ in range(3)]
 turn = 0
 while True:
+  targeted_barrels = []
   ships = {}
   grid = Grid()
   my_ship_count = int(input())  # the number of remaining ships
