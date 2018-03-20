@@ -113,6 +113,19 @@ class ShotNearestEnemyAction(Action):
     return FireTargetAction(target).try_execute(grid, turn, ship)
 
 
+class ShotMineAction(Action):
+  def try_execute(self, grid, turn, ship):
+    target = grid.find_nearest(Mine, ship.pos)
+
+    if target == None:
+      return False
+
+    if target.pos.dist_to(ship.front_pos()) > 5:
+      return False
+
+    return FireAction(target).try_execute(grid, turn, ship)
+
+
 class ShotTargetedEnemyAction(Action):
   def __init__(self):
     self.fire_action = None
@@ -221,7 +234,7 @@ def direction_to_pos(dir):
 
 
 actions = [
-  [ShotTargetedEnemyAction(), ShotNearestEnemyAction(), MoveToNearestBarrelAction(), MoveToNearestEnemyAction(),
+  [ShotTargetedEnemyAction(), ShotNearestEnemyAction(), ShotMineAction(), PlaceMineAction(), MoveToNearestBarrelAction(), MoveToNearestEnemyAction(),
    RandomMove()] for _ in
   range(3)]
 turn = 0
