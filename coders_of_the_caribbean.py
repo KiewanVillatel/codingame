@@ -13,10 +13,7 @@ grid = []
 
 
 class Action:
-  def can_execute(self, grid, turn, ship):
-    pass
-
-  def execute(self, grid, turn, ship):
+  def try_execute(self, grid, turn, ship):
     pass
 
 
@@ -24,58 +21,52 @@ class MoveAction(Action):
   def __init__(self, pos):
     self.pos = pos
 
-  def can_execute(self, grid, turn, ship):
-    return True
-
-  def execute(self, grid, turn, ship):
+  def try_execute(self, grid, turn, ship):
     print('MOVE ' + self.pos.to_string())
+    return True
 
 
 class MoveToNearestBarrelAction(Action):
-  def can_execute(self, grid, turn, ship):
+  def try_execute(self, grid, turn, ship):
     if ship.id not in ship_last_barrels or not isinstance(grid.get(ship_last_barrels[ship.id].pos), Barrel):
       nearest_barrel = grid.find_nearest(Barrel, ship.pos, lambda b: b not in ship_last_barrels)
       if nearest_barrel is None:
         return False
       ship_last_barrels[ship.id] = nearest_barrel
+    MoveAction(ship_last_barrels[ship.id].pos).try_execute(grid, turn, ship)
     return True
-
-  def execute(self, grid, turn, ship):
-    MoveAction(ship_last_barrels[ship.id].pos).execute(grid, turn, ship)
 
 
 class MoveToNearestEnemyAction(Action):
   def __init__(self):
     self.previous_target_enemy = None
 
-  def can_execute(self, grid, turn, ship):
+  def try_execute(self, grid, turn, ship):
     if self.previous_target_enemy == None or not isinstance(grid.get(self.previous_target_enemy.pos), Ship):
       self.previous_target_enemy = grid.find_nearest(Ship, ship.pos, lambda s: not s.owner)
-    return self.previous_target_enemy != None
-
-  def execute(self, grid, turn, ship):
-    MoveAction(self.previous_target_enemy.pos).execute(grid, turn, ship)
+    if self.previous_target_enemy == None:
+      return False
+    return MoveAction(self.previous_target_enemy.pos).try_execute(grid, turn, ship)
 
 
 class RandomMove(Action):
-  def can_execute(self, grid, turn, ship):
-    return True
-
-  def execute(self, grid, turn, ship):
-    MoveAction(Pos(random.randint(0, 19), random.randint(0, 19))).execute(grid, turn, ship)
+  def try_execute(self, grid, turn, ship):
+    return MoveAction(Pos(random.randint(0, 19), random.randint(0, 19))).try_execute(grid, turn, ship)
 
 
 class FireAction(Action):
   def __init__(self, target):
     self._target = target
 
-  def can_execute(self, grid, turn, ship):
+  def try_execute(self, grid, turn, ship):
     if ship.id in ship_last_shots and turn - ship_last_shots[ship.id] <= 2:
       return False
 
     if not grid.in_grid(self._target.pos):
       return False
 
+    ship_last_shots[ship.id] = turn
+    print('FIRE ' + self._target.pos.to_string())
     return True
 
 
@@ -84,7 +75,7 @@ class FireTargetAction(Action):
     self._ship_target = target
     self.target = None
 
-  def can_execute(self, grid, turn, ship):
+  def try_execute(self, grid, turn, ship):
     if self._ship_target is None:
       return False
 
@@ -109,58 +100,41 @@ class FireTargetAction(Action):
     if ship.front_pos().dist_to(self.target.pos) > 10:
       return False
 
-    print('shot', self._ship_target.pos.to_string(), self._ship_target.rotation.to_string(), self.target.pos.to_string(), file=sys.stderr)
-    return True
-
-  def execute(self, grid, turn, ship):
+    print('shot', self._ship_target.pos.to_string(), self._ship_target.rotation.to_string(),
+          self.target.pos.to_string(), file=sys.stderr)
     targeted_ships.append(self._ship_target)
-    ship_last_shots[ship.id] = turn
-    print('FIRE ' + self.target.pos.to_string())
+    return FireAction(self.target).try_execute(grid, turn, ship)
 
 
 class ShotNearestEnemyAction(Action):
-  def __init__(self):
-    self.fire_action = None
-
-  def can_execute(self, grid, turn, ship):
+  def try_execute(self, grid, turn, ship):
     target = grid.find_nearest(Ship, ship.pos, lambda s: not s.owner)
 
-    self.fire_action = FireTargetAction(target)
-
-    return self.fire_action.can_execute(grid, turn, ship)
-
-  def execute(self, grid, turn, ship):
-    self.fire_action.execute(grid, turn, ship)
+    return FireTargetAction(target).try_execute(grid, turn, ship)
 
 
 class ShotTargetedEnemyAction(Action):
   def __init__(self):
     self.fire_action = None
 
-  def can_execute(self, grid, turn, ship):
+  def try_execute(self, grid, turn, ship):
     for targeted_ship in targeted_ships:
       fire_action = FireTargetAction(targeted_ship)
-      if fire_action.can_execute(grid, turn, ship):
-        self.fire_action = fire_action
+      if fire_action.try_execute(grid, turn, ship):
         return True
     return False
-
-  def execute(self, grid, turn, ship):
-    self.fire_action.execute(grid, turn, ship)
 
 
 class PlaceMineAction(Action):
   def __init__(self):
     self.last_mine = -99999
 
-  def can_execute(self, grid, turn, ship):
+  def try_execute(self, grid, turn, ship):
     if turn - self.last_mine <= 5:
       return False
     self.last_mine = turn
-    return True
-
-  def execute(self, grid, turn, ship):
     print('MINE')
+    return True
 
 
 class Pos:
@@ -246,8 +220,10 @@ def direction_to_pos(dir):
   return Pos(dx, dy)
 
 
-actions = [[ShotTargetedEnemyAction(), ShotNearestEnemyAction(), MoveToNearestBarrelAction(), MoveToNearestEnemyAction(), RandomMove()] for _ in
-           range(3)]
+actions = [
+  [ShotTargetedEnemyAction(), ShotNearestEnemyAction(), MoveToNearestBarrelAction(), MoveToNearestEnemyAction(),
+   RandomMove()] for _ in
+  range(3)]
 turn = 0
 ship_last_barrels = {}
 ship_last_shots = {}
@@ -290,8 +266,7 @@ while True:
 
     action_found = False
     for action in actions[i]:
-      if action.can_execute(grid, turn, ships[i]):
-        action.execute(grid, turn, ships[i])
+      if action.try_execute(grid, turn, ships[i]):
         action_found = True
         break
     print('No action found', file=sys.stderr) if not action_found else None
