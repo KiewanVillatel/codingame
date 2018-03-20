@@ -8,6 +8,7 @@ def iround(x):
   Round a number to the nearest integer."""
   return int(round(x) - .5) + (x > 0)
 
+
 grid = []
 
 
@@ -42,6 +43,7 @@ class MoveToNearestBarrelAction(Action):
   def execute(self, grid, turn, ship):
     MoveAction(ship_last_barrels[ship.id].pos).execute(grid, turn, ship)
 
+
 class MoveToNearestEnemyAction(Action):
   def __init__(self):
     self.previous_target_enemy = None
@@ -54,12 +56,14 @@ class MoveToNearestEnemyAction(Action):
   def execute(self, grid, turn, ship):
     MoveAction(self.previous_target_enemy.pos).execute(grid, turn, ship)
 
+
 class RandomMove(Action):
   def can_execute(self, grid, turn, ship):
     return True
 
   def execute(self, grid, turn, ship):
     MoveAction(Pos(random.randint(0, 19), random.randint(0, 19))).execute(grid, turn, ship)
+
 
 class FireAction(Action):
   def __init__(self, target):
@@ -74,23 +78,25 @@ class FireAction(Action):
 
     return True
 
-  def execute(self, grid, turn, ship):
-    ship_last_shots[ship.id] = turn
-    print('FIRE ' + self._target.pos.to_string())
 
-class ShotNearestEnemyAction(Action):
+class FireTargetAction(Action):
+  def __init__(self, target):
+    self._ship_target = target
+    self.target = None
+
   def can_execute(self, grid, turn, ship):
+    if self._ship_target is None:
+      return False
+
     if ship.id in ship_last_shots and turn - ship_last_shots[ship.id] <= 2:
       return False
-    target = grid.find_nearest(Ship, ship.pos, lambda s: not s.owner)
 
-    if target is None:
+    if not isinstance(grid.get(self._ship_target.pos), Ship):
       return False
 
-    self.target = None
     for i in range(3):
-      target_x = target.pos.x + (i+1) * target.speed * target.rotation.x
-      target_y = target.pos.y + (i+1) * target.speed * target.rotation.y
+      target_x = self._ship_target.pos.x + (i + 1) * self._ship_target.speed * self._ship_target.rotation.x
+      target_y = self._ship_target.pos.y + (i + 1) * self._ship_target.speed * self._ship_target.rotation.y
       target_pos = Pos(target_x, target_y)
       t_shot = 1 + iround(target_pos.dist_to(ship.front_pos()) / 3)
       if t_shot - i < 2 and grid.in_grid(target_pos):
@@ -103,12 +109,44 @@ class ShotNearestEnemyAction(Action):
     if ship.front_pos().dist_to(self.target.pos) > 10:
       return False
 
-    print('shot', target.pos.to_string(), target.rotation.to_string(), self.target.pos.to_string(), file=sys.stderr)
+    print('shot', self._ship_target.pos.to_string(), self._ship_target.rotation.to_string(), self.target.pos.to_string(), file=sys.stderr)
     return True
 
   def execute(self, grid, turn, ship):
+    targeted_ships.append(self._ship_target)
     ship_last_shots[ship.id] = turn
     print('FIRE ' + self.target.pos.to_string())
+
+
+class ShotNearestEnemyAction(Action):
+  def __init__(self):
+    self.fire_action = None
+
+  def can_execute(self, grid, turn, ship):
+    target = grid.find_nearest(Ship, ship.pos, lambda s: not s.owner)
+
+    self.fire_action = FireTargetAction(target)
+
+    return self.fire_action.can_execute(grid, turn, ship)
+
+  def execute(self, grid, turn, ship):
+    self.fire_action.execute(grid, turn, ship)
+
+
+class ShotTargetedEnemyAction(Action):
+  def __init__(self):
+    self.fire_action = None
+
+  def can_execute(self, grid, turn, ship):
+    for targeted_ship in targeted_ships:
+      fire_action = FireTargetAction(targeted_ship)
+      if fire_action.can_execute(grid, turn, ship):
+        self.fire_action = fire_action
+        return True
+    return False
+
+  def execute(self, grid, turn, ship):
+    self.fire_action.execute(grid, turn, ship)
 
 
 class PlaceMineAction(Action):
@@ -199,7 +237,7 @@ class Grid:
     self.grid[pos.x][pos.y] = cell
 
   def in_grid(self, pos):
-    return pos.x < 23 and pos.x >=0 and pos.y <21 and pos.y >=0
+    return pos.x < 23 and pos.x >= 0 and pos.y < 21 and pos.y >= 0
 
 
 def direction_to_pos(dir):
@@ -208,11 +246,13 @@ def direction_to_pos(dir):
   return Pos(dx, dy)
 
 
-actions = [[ShotNearestEnemyAction(), MoveToNearestBarrelAction(), MoveToNearestEnemyAction(), RandomMove()] for _ in range(3)]
+actions = [[ShotTargetedEnemyAction(), ShotNearestEnemyAction(), MoveToNearestBarrelAction(), MoveToNearestEnemyAction(), RandomMove()] for _ in
+           range(3)]
 turn = 0
 ship_last_barrels = {}
 ship_last_shots = {}
 while True:
+  targeted_ships = []
   targeted_barrels = []
   ships = {}
   grid = Grid()
