@@ -22,12 +22,18 @@ class MoveAction(Action):
     self.pos = pos
 
   def try_execute(self, grid, turn, ship):
+    ships_target_pos[ship.id] = self.pos
     print('MOVE ' + self.pos.to_string())
     return True
 
 
 class MoveToNearestBarrelAction(Action):
+  def __init__(self, max_ship_rum=100):
+    self._max_ship_rum = max_ship_rum
+
   def try_execute(self, grid, turn, ship):
+    if ship.rum >= self._max_ship_rum:
+      return False
     if ship.id not in ship_last_barrels or not isinstance(grid.get(ship_last_barrels[ship.id].pos), Barrel):
       nearest_barrel = grid.find_nearest(Barrel, ship.pos, lambda b: b not in ship_last_barrels)
       if nearest_barrel is None:
@@ -35,6 +41,18 @@ class MoveToNearestBarrelAction(Action):
       ship_last_barrels[ship.id] = nearest_barrel
     MoveAction(ship_last_barrels[ship.id].pos).try_execute(grid, turn, ship)
     return True
+
+
+class MoveToTargetedShip(Action):
+  def __init__(self, min_ship_rum=0):
+    self._min_ship_rum = min_ship_rum
+
+  def try_execute(self, grid, turn, ship):
+    if ship.rum < self._min_ship_rum:
+      return False
+    if len(targeted_ships) > 0:
+      return MoveAction(targeted_ships[0].pos).try_execute(grid, turn, ship)
+    return False
 
 
 class MoveToNearestEnemyAction(Action):
@@ -115,7 +133,9 @@ class ShotNearestEnemyAction(Action):
 
 class ShotMineAction(Action):
   def try_execute(self, grid, turn, ship):
-    target = grid.find_nearest(Mine, ship.pos, lambda m: ship.rotation.x*(m.pos.x-ship.pos.x) > 0 and ship.rotation.y*(m.pos.y-ship.pos.y) > 0)
+    target = grid.find_nearest(Mine, ship.pos,
+                               lambda m: ship.rotation.x * (m.pos.x - ship.pos.x) > 0 and ship.rotation.y * (
+                                 m.pos.y - ship.pos.y) > 0)
 
     if target == None:
       return False
@@ -136,6 +156,25 @@ class ShotTargetedEnemyAction(Action):
       if fire_action.try_execute(grid, turn, ship):
         return True
     return False
+
+
+class Accelerate(Action):
+  def __init__(self):
+    self._last_accelerate = -99999
+
+  def try_execute(self, grid, turn, ship):
+    # if turn - self._last_accelerate <= 3:
+    #   return False
+    if ship.speed != 1:
+      return False
+    if ship.id not in ships_target_pos:
+      return False
+    target_pos = ships_target_pos[ship.id]
+    if not target_pos.is_in_direction(ship.pos, ship.rotation):
+      return False
+    self._last_accelerate = turn
+    print('FASTER')
+    return True
 
 
 class PlaceMineAction(Action):
@@ -165,6 +204,11 @@ class Pos:
 
   def minus(self, pos):
     return Pos(self.x - pos.x, self.y - pos.y)
+
+  def is_in_direction(self, start_pos, direction):
+    if direction.y == 0:
+      return (pos.x - start_pos.x)*direction.x > 0 and pos.y == start_pos.y
+    return (pos.x - start_pos.x) / direction.x == (pos.y - start_pos.y) / direction.y
 
   def to_string(self):
     return str(self.x) + " " + str(self.y)
@@ -234,12 +278,13 @@ def direction_to_pos(dir):
 
 
 actions = [
-  [ShotTargetedEnemyAction(), ShotNearestEnemyAction(), ShotMineAction(), MoveToNearestBarrelAction(), MoveToNearestEnemyAction(),
+  [ShotTargetedEnemyAction(), ShotNearestEnemyAction(), ShotMineAction(), Accelerate(), MoveToNearestBarrelAction(), MoveToTargetedShip(0), MoveToNearestEnemyAction(),
    RandomMove()] for _ in
   range(3)]
 turn = 0
 ship_last_barrels = {}
 ship_last_shots = {}
+ships_target_pos = {}
 while True:
   targeted_ships = []
   targeted_barrels = []
