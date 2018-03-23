@@ -23,7 +23,7 @@ class MoveAction(Action):
 
   def try_execute(self, grid, turn, ship):
     ships_target_pos[ship.id] = self.pos
-    print('MOVE ' + self.pos.to_string())
+    print('MOVE ' + self.pos.to_oddr_string())
     return True
 
 
@@ -32,7 +32,7 @@ class MoveToNearestBarrelAction(Action):
     self._max_ship_rum = max_ship_rum
 
   def try_execute(self, grid, turn, ship):
-    if ship.rum >= self._max_ship_rum:
+    if ship.rum > self._max_ship_rum:
       return False
     if ship.id not in ship_last_barrels or not isinstance(grid.get(ship_last_barrels[ship.id].pos), Barrel):
       nearest_barrel = grid.find_nearest(Barrel, ship.pos, lambda b: b not in ship_last_barrels)
@@ -69,7 +69,7 @@ class MoveToNearestEnemyAction(Action):
 
 class RandomMove(Action):
   def try_execute(self, grid, turn, ship):
-    return MoveAction(Pos(random.randint(0, 19), random.randint(0, 19))).try_execute(grid, turn, ship)
+    return MoveAction(Pos.from_oddr(random.randint(0, 19), random.randint(0, 19))).try_execute(grid, turn, ship)
 
 
 class FireAction(Action):
@@ -84,7 +84,7 @@ class FireAction(Action):
       return False
 
     ship_last_shots[ship.id] = turn
-    print('FIRE ' + self._target.pos.to_string())
+    print('FIRE ' + self._target.pos.to_oddr_string())
     return True
 
 
@@ -106,10 +106,11 @@ class FireTargetAction(Action):
     for i in range(3):
       target_x = self._ship_target.pos.x + (i + 1) * self._ship_target.speed * self._ship_target.rotation.x
       target_y = self._ship_target.pos.y + (i + 1) * self._ship_target.speed * self._ship_target.rotation.y
-      target_pos = Pos(target_x, target_y)
+      target_z = self._ship_target.pos.z + (i + 1) * self._ship_target.speed * self._ship_target.rotation.z
+      target_pos = Pos(target_x, target_y, target_z)
       t_shot = 1 + iround(target_pos.dist_to(ship.front_pos()) / 3)
       if t_shot - i < 2 and grid.in_grid(target_pos):
-        self.target = grid.get(Pos(target_x, target_y))
+        self.target = grid.get(target_pos)
         break
 
     if self.target is None:
@@ -134,8 +135,9 @@ class ShotNearestEnemyAction(Action):
 class ShotMineAction(Action):
   def try_execute(self, grid, turn, ship):
     target = grid.find_nearest(Mine, ship.pos,
-                               lambda m: ship.rotation.x * (m.pos.x - ship.pos.x) > 0 and ship.rotation.y * (
-                                 m.pos.y - ship.pos.y) > 0)
+                               lambda m: ship.rotation.x * (m.pos.x - ship.pos.x) >= 0 and ship.rotation.y * (
+                                 m.pos.y - ship.pos.y) >= 0 and ship.rotation.z * (
+                                 m.pos.z - ship.pos.z) >= 0)
 
     if target == None:
       return False
@@ -190,28 +192,50 @@ class PlaceMineAction(Action):
 
 
 class Pos:
-  def __init__(self, x, y):
+  def __init__(self, x, y, z):
     self.x = x
     self.y = y
+    self.z = z
+
+  @staticmethod
+  def from_oddr(col, row):
+    x = col - (row - (row & 1)) // 2
+    z = row
+    y = -x - z
+    return Pos(x, y, z)
+
+  def to_oddr(self):
+    col = self.x + (self.z - (self.z & 1)) // 2
+    row = self.z
+    return col, row
 
   def dist_to(self, pos):
-    dx = abs(pos.x - self.x)
-    dy = abs(pos.y - self.y)
-    return max(dx, dy)
+    return (abs(self.x - pos.x) + abs(self.y - pos.y) + abs(self.z - pos.z)) // 2
 
   def plus(self, pos):
-    return Pos(self.x + pos.x, self.y + pos.y)
+    return Pos(self.x + pos.x, self.y + pos.y, self.z + pos.z)
 
   def minus(self, pos):
-    return Pos(self.x - pos.x, self.y - pos.y)
+    return Pos(self.x - pos.x, self.y - pos.y, self.z - pos.z)
 
   def is_in_direction(self, start_pos, direction):
-    if direction.y == 0:
-      return (pos.x - start_pos.x)*direction.x > 0 and pos.y == start_pos.y
-    return (pos.x - start_pos.x) / direction.x == (pos.y - start_pos.y) / direction.y
+    dx = self.x - start_pos.x
+    dy = self.y - start_pos.y
+    dz = self.z - start_pos.z
+
+    for i in range(23):
+      temp_pos = start_pos.plus(Pos(i*direction.x, i*direction.y, i*direction.z))
+      if temp_pos.x == self.x and temp_pos.y == self.y and temp_pos.z == self.z:
+        return True
+
+    return False
 
   def to_string(self):
-    return str(self.x) + " " + str(self.y)
+    return str(self.x) + " " + str(self.y) + " " + str(self.z)
+
+  def to_oddr_string(self):
+    x, y = self.to_oddr()
+    return str(x) + " " + str(y)
 
 
 class Cell:
@@ -248,7 +272,7 @@ class Mine(Cell):
 
 class Grid:
   def __init__(self):
-    self.grid = [[Cell(Pos(i, j)) for j in range(21)] for i in range(23)]
+    self.grid = [[Cell(Pos.from_oddr(i, j)) for j in range(21)] for i in range(23)]
 
   def find_nearest(self, claz, pos, condition=None):
     min_dist = 99999999
@@ -262,25 +286,34 @@ class Grid:
     return res
 
   def get(self, pos):
-    return self.grid[pos.x][pos.y]
+    x, y = pos.to_oddr()
+    return self.grid[x][y]
 
   def update(self, pos, cell):
-    self.grid[pos.x][pos.y] = cell
+    x, y = pos.to_oddr()
+    self.grid[x][y] = cell
 
   def in_grid(self, pos):
-    return pos.x < 23 and pos.x >= 0 and pos.y < 21 and pos.y >= 0
+    x, y = pos.to_oddr()
+    return x < 23 and x >= 0 and y < 21 and y >= 0
 
 
 def direction_to_pos(dir):
-  dx = 1 if dir in [1, 0, 5] else -1
-  dy = 1 if dir in [4, 5] else -1 if dir in [2, 1] else 0
-  return Pos(dx, dy)
+  dir_map = {
+    0: Pos(1, -1, 0),
+    1: Pos(1, 0, -1),
+    2: Pos(0, 1, -1),
+    3: Pos(-1, 1, 0),
+    4: Pos(-1, 0, 1),
+    5: Pos(0, -1, 1),
+  }
+  return dir_map[dir]
 
 
 actions = [
   [ShotTargetedEnemyAction(), ShotNearestEnemyAction(), ShotMineAction(), Accelerate(), MoveToNearestBarrelAction(), MoveToTargetedShip(0), MoveToNearestEnemyAction(),
-   RandomMove()] for _ in
-  range(3)]
+   RandomMove()] for _ in range(3)]
+# actions = [[ShotNearestEnemyAction(), MoveToNearestBarrelAction()] for _ in range(3)]
 turn = 0
 ship_last_barrels = {}
 ship_last_shots = {}
@@ -297,7 +330,8 @@ while True:
     entity_id = int(entity_id)
     x = int(x)
     y = int(y)
-    pos = Pos(x, y)
+    pos = Pos.from_oddr(x, y)
+    print(pos.to_string(), x, y, file=sys.stderr)
     arg_1 = int(arg_1)
     arg_2 = int(arg_2)
     arg_3 = int(arg_3)
