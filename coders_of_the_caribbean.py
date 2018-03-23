@@ -330,8 +330,8 @@ def direction_to_pos(dir):
 
 actions = [
   [StopIfMine(), ShotTargetedEnemyAction(), ShotNearestEnemyAction(), ShotMineAction(), Accelerate(), MoveToNearestBarrelAction(),
-   MoveToTargetedShip(), MoveToNearestEnemyAction(), RandomMove()] for _ in range(3)]
-# actions = [[ShotNearestEnemyAction(), MoveToNearestBarrelAction()] for _ in range(3)]
+   MoveToTargetedShip(), MoveToNearestEnemyAction(), PlaceMineAction(), RandomMove()] for _ in range(3)]
+
 turn = 0
 ship_last_barrels = {}
 ship_last_shots = {}
