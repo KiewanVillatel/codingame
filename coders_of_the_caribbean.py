@@ -179,6 +179,18 @@ class Accelerate(Action):
     return True
 
 
+class StopIfMine(Action):
+  def try_execute(self, grid, turn, ship):
+    if ship.speed == 0:
+      return False
+    cells_pos_in_front = ship.get_pos_in_line()
+    for cell_pos in cells_pos_in_front:
+      if grid.in_grid(cell_pos) and isinstance(grid.get(cell_pos), Mine):
+        print('SLOWER')
+        return True
+    return False
+
+
 class PlaceMineAction(Action):
   def __init__(self):
     self.last_mine = -99999
@@ -224,7 +236,7 @@ class Pos:
     dz = self.z - start_pos.z
 
     for i in range(23):
-      temp_pos = start_pos.plus(Pos(i*direction.x, i*direction.y, i*direction.z))
+      temp_pos = start_pos.plus(Pos(i * direction.x, i * direction.y, i * direction.z))
       if temp_pos.x == self.x and temp_pos.y == self.y and temp_pos.z == self.z:
         return True
 
@@ -257,6 +269,12 @@ class Ship(Cell):
 
   def back_pos(self):
     return self.pos.minus(self.rotation)
+
+  def get_pos_in_line(self):
+    cells = []
+    for i in range(23):
+      cells.append(self.front_pos().plus(Pos(i * self.rotation.x, i * self.rotation.y, i * self.rotation.z)))
+    return cells
 
 
 class Barrel(Cell):
@@ -311,8 +329,8 @@ def direction_to_pos(dir):
 
 
 actions = [
-  [ShotTargetedEnemyAction(), ShotNearestEnemyAction(), ShotMineAction(), Accelerate(), MoveToNearestBarrelAction(), MoveToTargetedShip(0), MoveToNearestEnemyAction(),
-   RandomMove()] for _ in range(3)]
+  [StopIfMine(), ShotTargetedEnemyAction(), ShotNearestEnemyAction(), ShotMineAction(), Accelerate(), MoveToNearestBarrelAction(),
+   MoveToTargetedShip(), MoveToNearestEnemyAction(), RandomMove()] for _ in range(3)]
 # actions = [[ShotNearestEnemyAction(), MoveToNearestBarrelAction()] for _ in range(3)]
 turn = 0
 ship_last_barrels = {}
