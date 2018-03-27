@@ -25,6 +25,9 @@ class Pos:
   def minus(self, pos):
     return Pos(self.x - pos.x, self.y - pos.y, self.z - pos.z)
 
+  def times(self, number):
+    return Pos(self.x * number, self.y * number, self.z * number)
+
   def is_in_direction(self, start_pos, direction):
     dx = self.x - start_pos.x
     dy = self.y - start_pos.y
@@ -46,8 +49,9 @@ class Pos:
 
 
 class Cell:
-  def __init__(self, pos):
+  def __init__(self, pos, cannonball=None):
     self.pos = pos
+    self.cannonball = cannonball
 
 
 class Ship(Cell):
@@ -71,6 +75,15 @@ class Ship(Cell):
       cells.append(self.front_pos().plus(Pos(i * self.rotation.x, i * self.rotation.y, i * self.rotation.z)))
     return cells
 
+  def get_next_pos(self):
+    return self.pos.plus(self.rotation.times(self.speed))
+
+  def get_next_front_pos(self):
+    return self.front_pos().plus(self.rotation.times(self.speed))
+
+  def get_next_back_pos(self):
+    return self.back_pos().plus(self.rotation.times(self.speed))
+
 
 class Barrel(Cell):
   def __init__(self, pos, rum):
@@ -83,6 +96,13 @@ class Mine(Cell):
     super().__init__(pos)
 
 
+class Cannonball(Cell):
+  def __init__(self, pos, shooter_id, time_before_impact):
+    super().__init__(pos)
+    self._shooter_id = shooter_id
+    self._time_before_impact = time_before_impact
+
+
 class Grid:
   def __init__(self):
     self.grid = [[Cell(Pos.from_oddr(i, j)) for j in range(21)] for i in range(23)]
@@ -93,7 +113,7 @@ class Grid:
     for row in self.grid:
       for cell in row:
         dist = pos.dist_to(cell.pos)
-        if isinstance(cell, claz) and dist < min_dist and (condition == None or condition(cell)):
+        if isinstance(cell, claz) and dist < min_dist and (condition is None or condition(cell)):
           res = cell
           min_dist = dist
     return res

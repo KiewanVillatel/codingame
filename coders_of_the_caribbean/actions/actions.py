@@ -10,6 +10,7 @@ def iround(x):
   Round a number to the nearest integer."""
   return int(round(x) - .5) + (x > 0)
 
+
 class Action:
   def try_execute(self, grid, turn, ship):
     pass
@@ -159,21 +160,25 @@ class ShotTargetedEnemyAction(Action):
 
 
 class Accelerate(Action):
-  def __init__(self):
-    self._last_accelerate = -99999
-
   def try_execute(self, grid, turn, ship):
     # if turn - self._last_accelerate <= 3:
     #   return False
-    if ship.speed != 1:
+    if ship.speed == 2:
       return False
     if ship.id not in ships_target_pos:
       return False
     target_pos = ships_target_pos[ship.id]
     if not target_pos.is_in_direction(ship.pos, ship.rotation):
       return False
-    self._last_accelerate = turn
     print('FASTER')
+    return True
+
+
+class SlowerAction(Action):
+  def try_execute(self, grid, turn, ship):
+    if ship.speed == 0:
+      return False
+    print('SLOWER')
     return True
 
 
@@ -184,8 +189,7 @@ class StopIfMine(Action):
     cells_pos_in_front = ship.get_pos_in_line()
     for cell_pos in cells_pos_in_front:
       if grid.in_grid(cell_pos) and isinstance(grid.get(cell_pos), Mine):
-        print('SLOWER')
-        return True
+        return SlowerAction().try_execute(grid, turn, ship)
     return False
 
 
@@ -199,3 +203,23 @@ class PlaceMineAction(Action):
     self.last_mine = turn
     print('MINE')
     return True
+
+
+class AvoidCannonballAction(Action):
+  def try_execute(self, grid, turn, ship):
+    action_map = {
+      ship.get_next_pos(): [Accelerate(), SlowerAction()],
+      ship.get_next_front_pos: [SlowerAction()],
+      ship.get_next_back_pos(): [Accelerate()]
+    }
+
+    for pos, actions in action_map.items():
+      if not grid.in_grid(pos):
+        continue
+      next_cell = grid.get(pos)
+      cannonball = next_cell.cannonball
+      if cannonball is not None and cannonball._time_before_impact == 1:
+        for action in actions:
+          if action.try_execute(grid, turn, ship):
+            return True
+    return False

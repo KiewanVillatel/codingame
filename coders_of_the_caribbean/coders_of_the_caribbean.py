@@ -1,8 +1,8 @@
 import sys
 
-from .actions.actions import StopIfMine, ShotTargetedEnemyAction, ShotNearestEnemyAction, ShotMineAction, Accelerate, MoveToNearestBarrelAction, MoveToTargetedShip, MoveToNearestEnemyAction, PlaceMineAction, RandomMove
-from .model.model import Grid, Pos, Mine, Barrel, Ship, Cell
-from .global_vars import targeted_ships, targeted_barrels
+from .actions.actions import AvoidCannonballAction, StopIfMine, ShotTargetedEnemyAction, ShotNearestEnemyAction, ShotMineAction, Accelerate, MoveToNearestBarrelAction, MoveToTargetedShip, MoveToNearestEnemyAction, PlaceMineAction, RandomMove
+from .model.model import Grid, Pos, Mine, Barrel, Ship, Cell, Cannonball
+from .global_vars import targeted_ships, targeted_barrels, cannonballs
 
 grid = []
 
@@ -20,13 +20,14 @@ def direction_to_pos(dir):
 
 
 actions = [
-  [StopIfMine(), ShotTargetedEnemyAction(), ShotNearestEnemyAction(), ShotMineAction(), Accelerate(), MoveToNearestBarrelAction(),
+  [StopIfMine(), AvoidCannonballAction(), ShotTargetedEnemyAction(), ShotNearestEnemyAction(), ShotMineAction(), Accelerate(), MoveToNearestBarrelAction(),
    MoveToTargetedShip(), MoveToNearestEnemyAction(), PlaceMineAction(), RandomMove()] for _ in range(3)]
 
 turn = 0
 while True:
   targeted_ships.clear()
   targeted_barrels.clear()
+  cannonballs.clear()
 
   ships = {}
   grid = Grid()
@@ -38,7 +39,6 @@ while True:
     x = int(x)
     y = int(y)
     pos = Pos.from_oddr(x, y)
-    print(pos.to_string(), x, y, file=sys.stderr)
     arg_1 = int(arg_1)
     arg_2 = int(arg_2)
     arg_3 = int(arg_3)
@@ -51,18 +51,18 @@ while True:
       cell = Mine(pos)
     elif entity_type == 'BARREL':
       cell = Barrel(pos, arg_1)
+    elif entity_type == 'CANNONBALL':
+      cell = Cannonball(pos, arg_1, arg_2)
+      cannonballs.append(cell)
     else:
       cell = Cell(pos)
 
     grid.update(pos, cell)
 
+  for cannonball in cannonballs:
+    grid.get(cannonball.pos).cannonball = cannonball
+
   for i in range(my_ship_count):
-    # Write an action using print
-    # To debug: print("Debug messages...", file=sys.stderr)
-
-    # Any valid action, such as "WAIT" or "MOVE x y"
-    print(ships[i].pos.to_string(), file=sys.stderr)
-
     action_found = False
     for action in actions[i]:
       if action.try_execute(grid, turn, ships[i]):
