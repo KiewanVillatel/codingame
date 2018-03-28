@@ -129,3 +129,13 @@ class Grid:
   def in_grid(self, pos):
     x, y = pos.to_oddr()
     return x < 23 and x >= 0 and y < 21 and y >= 0
+
+  def get_adjacent_cells(self, cell):
+    cells = []
+    pos = cell.pos
+    for i in [-1, 1]:
+      for candidate_cell_pos in [Pos(pos.x+i, pos.y, pos.z), Pos(pos.x, pos.y+i, pos.z), Pos(pos.x, pos.y, pos.z+i)]:
+        if self.in_grid(candidate_cell_pos):
+          cells.append(self.get(candidate_cell_pos))
+    return cells
+

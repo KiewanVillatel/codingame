@@ -3,6 +3,7 @@ import sys
 from .actions.actions import AvoidCannonballAction, StopIfMine, ShotTargetedEnemyAction, ShotNearestEnemyAction, ShotMineAction, Accelerate, MoveToNearestBarrelAction, MoveToTargetedShip, MoveToNearestEnemyAction, PlaceMineAction, RandomMove
 from .model.model import Grid, Pos, Mine, Barrel, Ship, Cell, Cannonball
 from .global_vars import targeted_ships, targeted_barrels, cannonballs
+from .services.a_star import AStar
 
 grid = []
 
@@ -33,6 +34,10 @@ while True:
   grid = Grid()
   my_ship_count = int(input())  # the number of remaining ships
   entity_count = int(input())  # the number of entities (e.g. ships, mines or cannonballs)
+  a_star = AStar(heuristic=lambda x,y: x.pos.dist_to(y.pos),
+                 get_adjacent_cells=lambda c:grid.get_adjacent_cells(c),
+                 compare=lambda c1, c2: c1.pos.x == c2.pos.x and c1.pos.y == c2.pos.y and c1.pos.z == c2.pos.z)
+
   for i in range(entity_count):
     entity_id, entity_type, x, y, arg_1, arg_2, arg_3, arg_4 = input().split()
     entity_id = int(entity_id)

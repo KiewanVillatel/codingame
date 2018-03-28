@@ -13,7 +13,7 @@ def handle_file(file, outfile):
 
 with open('./script.py', 'w') as outfile:
   handle_file('./global_vars.py', outfile)
-  for dir in ['model', 'actions']:
+  for dir in ['model', 'services', 'actions']:
     for subdir, dirs, files in os.walk(dir):
       for file in files:
         if file != '__init__.py':

@@ -209,7 +209,7 @@ class AvoidCannonballAction(Action):
   def try_execute(self, grid, turn, ship):
     action_map = {
       ship.get_next_pos(): [Accelerate(), SlowerAction()],
-      ship.get_next_front_pos: [SlowerAction()],
+      ship.get_next_front_pos(): [SlowerAction()],
       ship.get_next_back_pos(): [Accelerate()]
     }
 
