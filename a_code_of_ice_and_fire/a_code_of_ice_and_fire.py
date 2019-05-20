@@ -43,13 +43,13 @@ while True:
   for i in range(building_count):
     owner, building_type, x, y = [int(j) for j in input().split()]
     building = Building(x=x, y=y, is_owned=owner == 0)
-    map._grid[x][y].building = building
+    map.get_cell(x, y).building = building
 
   unit_count = int(input())
   for i in range(unit_count):
     owner, unit_id, level, x, y = [int(j) for j in input().split()]
     unit = Unit(x=x, y=y, is_owned=owner == 0, unit_id=unit_id, level=level)
-    map._grid[x][y].unit = unit
+    map.get_cell(x, y).unit = unit
 
   agent = Wood2Agent()
 

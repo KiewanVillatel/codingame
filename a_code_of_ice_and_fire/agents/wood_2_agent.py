@@ -4,6 +4,7 @@ from typing import Callable
 
 from ..model.cell import Cell
 from ..model.environment import Environment
+from ..actions.actions import Action, RandomWalkAction, MoveToUnownedCellAction
 
 
 class Wood2Agent:
@@ -15,7 +16,7 @@ class Wood2Agent:
       if environment.gold <= 10:
         break
 
-      level = 1
+      level = 1 if environment.gold < 20 else 2
 
       start_cells_filter: Callable[[Cell], bool] = lambda cell: cell.is_owned
 
@@ -32,7 +33,7 @@ class Wood2Agent:
       spawn_cell = random.choice(free_owned_cells)
 
       orders.append(" ".join(["TRAIN", str(level), str(spawn_cell.x), str(spawn_cell.y)]))
-      environment.gold -= 10
+      environment.gold -= level * 10
 
     return orders
 
@@ -43,12 +44,15 @@ class Wood2Agent:
 
     owned_units = environment.map.get_owned_units()
 
-    for unit in owned_units:
-      adjacent_cells = environment.map.get_adjacent_cells([unit])
+    actions: [Action] = [MoveToUnownedCellAction(), RandomWalkAction()]
 
-      if len(adjacent_cells):
-        target_cell = random.choice(adjacent_cells)
-        orders.append(" ".join(["MOVE", str(unit.id), str(target_cell.x), str(target_cell.y)]))
+    for unit in owned_units:
+      for action in actions:
+        order = action.try_execute(unit=unit, environment=environment)
+
+        if order is not "":
+          orders.append(order)
+          break
 
     orders.append("WAIT")
     print(" ;".join(orders))

@@ -13,6 +13,10 @@ with open('./script.py', 'w') as outfile:
     for model in models:
         handle_file('model/' + model + '.py', outfile)
 
+    actions = ['actions']
+    for action in actions:
+        handle_file('actions/' + action + '.py', outfile)
+
     agents = ['random_agent', 'wood_2_agent']
     for agent in agents:
         handle_file('agents/' + agent + '.py', outfile)

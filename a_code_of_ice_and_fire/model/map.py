@@ -8,16 +8,19 @@ class Map:
   map_size = 12
 
   def __init__(self):
-    self._grid = [[Cell(x=i, y=j) for j in range(Map.map_size)] for i in range(Map.map_size)]
+    self._grid = [[Cell(x=i, y=j) for i in range(Map.map_size)] for j in range(Map.map_size)]
 
   def update_cell(self, cell: Cell):
-    self._grid[cell.x][cell.y] = cell
+    self._grid[cell.y][cell.x] = cell
+
+  def get_cell(self, x, y):
+    return self._grid[y][x]
 
   def is_in_grid(self, x, y):
     return 0 <= x < Map.map_size and 0 <= y < Map.map_size
 
-  def get_adjacent_cells(self, positions: [Position], cell_filter: Callable[[Cell], bool] = None):
-    cells = [self._grid[x][y] for pos in positions for x, y in
+  def get_adjacent_cells(self, positions: [Position], cell_filter: Callable[[Cell], bool] = None) -> [Cell]:
+    cells = [self.get_cell(x, y) for pos in positions for x, y in
              [(pos.x - 1, pos.y), (pos.x + 1, pos.y), (pos.x, pos.y - 1), (pos.x, pos.y + 1)] if
              self.is_in_grid(x, y)]
 
