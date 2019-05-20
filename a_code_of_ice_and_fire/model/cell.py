@@ -11,3 +11,4 @@ class Cell(Position):
         self.is_active = None
 
         self.unit = None
+        self.building = None

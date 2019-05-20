@@ -14,7 +14,7 @@ class RandomAgent:
         owned_units = environment.map.get_owned_units()
 
         for unit in owned_units:
-            adjacent_cells = environment.map.get_adjacent_cells(unit)
+            adjacent_cells = environment.map.get_adjacent_cells([unit])
 
             if len(adjacent_cells):
                 target_cell = random.choice(adjacent_cells)
