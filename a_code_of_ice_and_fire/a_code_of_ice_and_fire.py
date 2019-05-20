@@ -25,17 +25,17 @@ while True:
     for j, c in enumerate(line):
       cell = map._grid[i][j]
       if c == "#":
-        cell.is_void, cell.is_owned, cell.is_active = True, False, False
+        cell.is_void, cell.is_owned, cell.is_active, cell.is_neutral = True, False, False, False
       elif c == ".":
-        cell.is_void, cell.is_owned, cell.is_active = False, False, False
+        cell.is_void, cell.is_owned, cell.is_active, cell.is_neutral = False, False, False, True
       elif c == "O":
-        cell.is_void, cell.is_owned, cell.is_active = False, True, True
+        cell.is_void, cell.is_owned, cell.is_active, cell.is_neutral = False, True, True, False
       elif c == "o":
-        cell.is_void, cell.is_owned, cell.is_active = False, True, False
+        cell.is_void, cell.is_owned, cell.is_active, cell.is_neutral = False, True, False, False
       elif c == "X":
-        cell.is_void, cell.is_owned, cell.is_active = False, False, True
+        cell.is_void, cell.is_owned, cell.is_active, cell.is_neutral = False, False, True, False
       elif c == "x":
-        cell.is_void, cell.is_owned, cell.is_active = False, False, False
+        cell.is_void, cell.is_owned, cell.is_active, cell.is_neutral = False, False, False, False
       else:
         raise Exception("Unable to parse cell")
 

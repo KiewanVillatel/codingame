@@ -9,6 +9,7 @@ class Cell(Position):
         self.is_void = None
         self.is_owned = None
         self.is_active = None
+        self.is_neutral = None
 
         self.unit = None
         self.building = None

@@ -4,7 +4,7 @@ from typing import Callable
 
 from ..model.cell import Cell
 from ..model.environment import Environment
-from ..actions.actions import Action, RandomWalkAction, MoveToUnownedCellAction
+from ..actions.actions import Action, RandomWalkAction, MoveToUnownedCellAction, MoveToEnemyCellAction, KillEnemyAction
 
 
 class Wood2Agent:
@@ -44,7 +44,10 @@ class Wood2Agent:
 
     owned_units = environment.map.get_owned_units()
 
-    actions: [Action] = [MoveToUnownedCellAction(), RandomWalkAction()]
+    actions: [Action] = [KillEnemyAction(),
+                         MoveToEnemyCellAction(),
+                         MoveToUnownedCellAction(),
+                         RandomWalkAction()]
 
     for unit in owned_units:
       for action in actions:

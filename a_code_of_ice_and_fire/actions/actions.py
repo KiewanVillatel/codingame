@@ -55,5 +55,39 @@ class MoveToUnownedCellAction(Action):
     return ""
 
 
+class MoveToEnemyCellAction(Action):
+
+  def get_name(self):
+    return "move_to_unowned_cell"
+
+  def try_execute(self, unit: Unit, environment: Environment) -> str:
+    cell_filter: Callable[[Cell], bool] = lambda cell: not (cell.is_void or cell.is_neutral or cell.is_owned)
+
+    adjacent_cells = environment.map.get_adjacent_cells([unit], cell_filter=cell_filter)
+
+    if len(adjacent_cells):
+      target_cell = random.choice(adjacent_cells)
+      print(target_cell.is_owned, file=sys.stderr)
+      return " ".join(["MOVE", str(unit.id), str(target_cell.x), str(target_cell.y)])
+
+    return ""
 
 
+class KillEnemyAction(Action):
+
+  def get_name(self):
+    return "move_to_unowned_cell"
+
+  def try_execute(self, unit: Unit, environment: Environment) -> str:
+    cell_filter: Callable[[Cell], bool] = lambda cell: not (cell.is_void or cell.is_neutral or cell.is_owned) \
+                                                       and (cell.unit is not None) \
+                                                       and (cell.unit.level < unit.level)
+
+    adjacent_cells = environment.map.get_adjacent_cells([unit], cell_filter=cell_filter)
+
+    if len(adjacent_cells):
+      target_cell = random.choice(adjacent_cells)
+      print(target_cell.is_owned, file=sys.stderr)
+      return " ".join(["MOVE", str(unit.id), str(target_cell.x), str(target_cell.y)])
+
+    return ""
