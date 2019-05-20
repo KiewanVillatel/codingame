@@ -1,20 +1,24 @@
-from ..model.map import Map
 import random
+
+from ..model.environment import Environment
 
 
 class RandomAgent:
 
-    def act(self, map: Map):
+    def act(self, environment: Environment):
         orders = []
 
-        owned_units = map.get_owned_units()
+        if environment.gold > 10:
+            orders.append("TRAIN 1 1 0")
+
+        owned_units = environment.map.get_owned_units()
 
         for unit in owned_units:
-            adjacent_cells = map.get_adjacent_cells(unit)
+            adjacent_cells = environment.map.get_adjacent_cells(unit)
 
-            target_cell = random.choice(adjacent_cells)
+            if len(adjacent_cells):
+                target_cell = random.choice(adjacent_cells)
+                orders.append(" ".join(["MOVE", str(unit.id), str(target_cell.x), str(target_cell.y)]))
 
-            orders.append(' '.join(['MOVE', unit.id, str(target_cell.x), str(target_cell.y)]))
-
-        orders.append('WAIT')
-        print(' ;'.join(orders))
+        orders.append("WAIT")
+        print(" ;".join(orders))

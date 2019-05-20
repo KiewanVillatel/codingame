@@ -1,8 +1,7 @@
-import sys
-import math
+from .agents.random_agent import RandomAgent
+from .model.environment import Environment
 from .model.map import Map
 from .model.unit import Unit
-from .agents.random_agent import RandomAgent
 
 # Auto-generated code below aims at helping you parse
 # the standard input according to the problem statement.
@@ -50,7 +49,13 @@ while True:
 
     agent = RandomAgent()
 
-    agent.act(map)
+    environment = Environment(grid=map,
+                              gold=gold,
+                              income=income,
+                              opponent_gold=opponent_gold,
+                              opponent_income=opponent_income)
+
+    agent.act(environment)
 
     # Write an action using print
     # To debug: print("Debug messages...", file=sys.stderr)

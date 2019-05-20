@@ -9,7 +9,7 @@ def handle_file(file, outfile):
 
 
 with open('./script.py', 'w') as outfile:
-    models = ['position', 'cell', 'unit', 'map']
+    models = ['position', 'cell', 'unit', 'map', 'environment']
     for model in models:
         handle_file('model/' + model + '.py', outfile)
 
