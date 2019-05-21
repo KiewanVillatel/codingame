@@ -11,9 +11,6 @@ class Map:
   def __init__(self):
     self._grid = [[Cell(x=i, y=j) for i in range(Map.map_size)] for j in range(Map.map_size)]
 
-  def update_cell(self, cell: Cell):
-    self._grid[cell.y][cell.x] = cell
-
   def get_cell(self, x, y):
     return self._grid[y][x]
 

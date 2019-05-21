@@ -5,8 +5,8 @@ from typing import Callable
 from ..model.building import Building, BuildingType
 from ..model.cell import Cell
 from ..model.environment import Environment
-from ..actions.actions import Action, RandomWalkAction, MoveToUnownedCellAction, MoveToEnemyCellAction, KillEnemyAction, \
-  MoveToEnemyHQAction
+from ..actions.actions import Action, RandomWalkAction, MoveToUnownedCellAction, MoveToEnemyCellAction, KillEnemyAction
+from ..actions.actions import MoveToEnemyHQAction
 
 
 class BronzeAgent:
@@ -21,6 +21,8 @@ class BronzeAgent:
                                                             cell.unit is None
 
     mine_spots = environment.map.get_all_cells(cell_filter=mine_spot_filter)
+
+    print(len(mine_spots), file=sys.stderr)
 
     nb_mines = len(owned_mines)
 
@@ -53,8 +55,9 @@ class BronzeAgent:
 
       start_cells = environment.map.get_all_cells(cell_filter=start_cells_filter)
 
-      spawn_cell_filter: Callable[[Cell], bool] = lambda cell: (cell.unit is None) and \
-                                                               (cell.building is None)
+      spawn_cell_filter: Callable[[Cell], bool] = lambda cell: (cell.unit is None or cell.unit.level < level or level == 3) and \
+                                                               (cell.building is None) and \
+                                                               cell.is_owned is False
 
       free_owned_cells = environment.map.get_adjacent_cells(positions=start_cells, cell_filter=spawn_cell_filter)
 

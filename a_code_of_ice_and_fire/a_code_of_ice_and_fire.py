@@ -1,3 +1,5 @@
+import sys
+
 from .agents.bronze_agent import BronzeAgent
 from .model.building import Building, BuildingType
 from .model.environment import Environment
@@ -26,12 +28,13 @@ while True:
   income = int(input())
   opponent_gold = int(input())
   opponent_income = int(input())
-  for i in range(12):
+  for y in range(12):
     line = input()
-    for j, c in enumerate(line):
-      cell = map.get_cell(i, j)
+    # print(line, file=sys.stderr)
+    for x, c in enumerate(line):
+      cell = map.get_cell(x, y)
 
-      if i in mine_spots and j in mine_spots[i]:
+      if x in mine_spots and y in mine_spots[x]:
         cell.is_mine_spot = True
 
       if c == "#":
