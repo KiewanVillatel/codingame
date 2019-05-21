@@ -9,6 +9,8 @@ def handle_file(file, outfile):
 
 
 with open('./script.py', 'w') as outfile:
+    handle_file('./global_vars.py', outfile)
+
     models = ['position', 'cell', 'unit', 'building', 'map', 'environment']
     for model in models:
         handle_file('model/' + model + '.py', outfile)
