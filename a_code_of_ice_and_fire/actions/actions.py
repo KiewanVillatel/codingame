@@ -91,3 +91,12 @@ class KillEnemyAction(Action):
       return " ".join(["MOVE", str(unit.id), str(target_cell.x), str(target_cell.y)])
 
     return ""
+
+
+class MoveToEnemyHQAction(Action):
+
+  def get_name(self):
+    return "move_to_unowned_cell"
+
+  def try_execute(self, unit: Unit, environment: Environment) -> str:
+    return " ".join(["MOVE", str(unit.id), str(11), str(11)])

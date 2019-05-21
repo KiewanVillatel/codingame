@@ -17,7 +17,7 @@ with open('./script.py', 'w') as outfile:
     for action in actions:
         handle_file('actions/' + action + '.py', outfile)
 
-    agents = ['random_agent', 'wood_2_agent']
+    agents = ['random_agent', 'wood_2_agent', 'bronze_agent']
     for agent in agents:
         handle_file('agents/' + agent + '.py', outfile)
 

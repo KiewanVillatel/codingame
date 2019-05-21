@@ -1,4 +1,4 @@
-from .agents.wood_2_agent import Wood2Agent
+from .agents.bronze_agent import BronzeAgent
 from .model.building import Building
 from .model.environment import Environment
 from .model.map import Map
@@ -51,7 +51,7 @@ while True:
     unit = Unit(x=x, y=y, is_owned=owner == 0, unit_id=unit_id, level=level)
     map.get_cell(x, y).unit = unit
 
-  agent = Wood2Agent()
+  agent = BronzeAgent()
 
   environment = Environment(grid=map,
                             gold=gold,
