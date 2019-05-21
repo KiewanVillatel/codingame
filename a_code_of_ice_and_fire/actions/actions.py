@@ -49,7 +49,6 @@ class MoveToUnownedCellAction(Action):
 
     if len(adjacent_cells):
       target_cell = random.choice(adjacent_cells)
-      print(target_cell.is_owned, file=sys.stderr)
       return " ".join(["MOVE", str(unit.id), str(target_cell.x), str(target_cell.y)])
 
     return ""
@@ -67,7 +66,6 @@ class MoveToEnemyCellAction(Action):
 
     if len(adjacent_cells):
       target_cell = random.choice(adjacent_cells)
-      print(target_cell.is_owned, file=sys.stderr)
       return " ".join(["MOVE", str(unit.id), str(target_cell.x), str(target_cell.y)])
 
     return ""
@@ -87,7 +85,6 @@ class KillEnemyAction(Action):
 
     if len(adjacent_cells):
       target_cell = random.choice(adjacent_cells)
-      print(target_cell.is_owned, file=sys.stderr)
       return " ".join(["MOVE", str(unit.id), str(target_cell.x), str(target_cell.y)])
 
     return ""
@@ -99,4 +96,6 @@ class MoveToEnemyHQAction(Action):
     return "MoveToEnemyHQAction"
 
   def try_execute(self, unit: Unit, environment: Environment) -> str:
-    return " ".join(["MOVE", str(unit.id), str(11), str(11)])
+    target_cell = environment.map.get_opponent_HQ_cell()
+
+    return " ".join(["MOVE", str(unit.id), str(target_cell.x), str(target_cell.y)])

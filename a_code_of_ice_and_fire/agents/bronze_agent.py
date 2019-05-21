@@ -7,9 +7,28 @@ from ..model.cell import Cell
 from ..model.environment import Environment
 from ..actions.actions import Action, RandomWalkAction, MoveToUnownedCellAction, MoveToEnemyCellAction, KillEnemyAction
 from ..actions.actions import MoveToEnemyHQAction
-
+from ..model.unit import Unit
 
 class BronzeAgent:
+
+  def build_towers(self, environment: Environment) -> [str]:
+    hq_cell = environment.map.get_HQ_cell()
+    candidate_cells = environment.map.get_adjacent_cells([hq_cell])
+
+    orders = []
+
+    if len(environment.map.get_owned_units()) < 5:
+      return orders
+
+    for cell in candidate_cells:
+      if environment.gold < 20:
+        return orders
+      if cell.building is None and cell.is_owned and cell.unit is None:
+        environment.gold -= 15
+        cell.building = Building(cell.x, cell.y, is_owned=True, type=BuildingType.Tower)
+        orders.append("BUILD TOWER {} {}".format(cell.x, cell.y))
+
+    return orders
 
   def build_mines(self, environment: Environment) -> [str]:
     owned_mines = environment.map.get_owned_mines()
@@ -22,8 +41,6 @@ class BronzeAgent:
 
     mine_spots = environment.map.get_all_cells(cell_filter=mine_spot_filter)
 
-    print(len(mine_spots), file=sys.stderr)
-
     nb_mines = len(owned_mines)
 
     orders = []
@@ -34,7 +51,6 @@ class BronzeAgent:
       if mine_price > environment.gold:
         return orders
 
-      # orders.append("BUILD MINE ".format(mine_spot.x, mine_spot.y))
       orders.append("BUILD MINE " + str(mine_spot.x) + " " + str(mine_spot.y))
 
       environment.gold -= mine_price
@@ -49,23 +65,29 @@ class BronzeAgent:
       if environment.gold <= 10:
         break
 
-      level = 1 if environment.gold < 40 else 2
+      level = 1 if environment.gold < 30 else 2 if environment.gold < 40 else 3
 
       start_cells_filter: Callable[[Cell], bool] = lambda cell: cell.is_owned
 
       start_cells = environment.map.get_all_cells(cell_filter=start_cells_filter)
 
-      spawn_cell_filter: Callable[[Cell], bool] = lambda cell: (cell.unit is None or cell.unit.level < level or level == 3) and \
-                                                               (cell.building is None) and \
-                                                               cell.is_owned is False
+      base_spawn_filter: Callable[[Cell], bool] = lambda cell: (cell.unit is None or cell.unit.level < level or level == 3) and \
+                                                                 (cell.building is None)
 
-      free_owned_cells = environment.map.get_adjacent_cells(positions=start_cells, cell_filter=spawn_cell_filter)
+      spawn_cell_filter: Callable[[Cell], bool] = lambda cell: (base_spawn_filter(cell) and cell.is_owned is False)
 
-      if not len(free_owned_cells):
+      candidate_cells = environment.map.get_adjacent_cells(positions=start_cells, cell_filter=spawn_cell_filter)
+
+      # If no candidate neutral or opponent cells, try on owned cells
+      if not len(candidate_cells):
+        candidate_cells = environment.map.get_adjacent_cells(positions=start_cells, cell_filter=base_spawn_filter)
+
+      if not len(candidate_cells):
         break
 
-      spawn_cell = random.choice(free_owned_cells)
-
+      spawn_cell = random.choice(candidate_cells)
+      spawn_cell.is_owned = True
+      spawn_cell.unit = Unit(spawn_cell.x, spawn_cell.y, -1, is_owned=True, level=level)
       orders.append(" ".join(["TRAIN", str(level), str(spawn_cell.x), str(spawn_cell.y)]))
       environment.gold -= level * 10
 
@@ -75,7 +97,7 @@ class BronzeAgent:
     orders = []
 
     orders += self.build_mines(environment)
-
+    orders += self.build_towers(environment)
     orders += self.spawn(environment)
 
     owned_units = environment.map.get_owned_units()
@@ -87,6 +109,9 @@ class BronzeAgent:
                          RandomWalkAction()]
 
     for unit in owned_units:
+      # An unit with an id of -1 has just been created and can't receive orders
+      if unit.id is -1:
+        continue
       for action in actions:
         order = action.try_execute(unit=unit, environment=environment)
 

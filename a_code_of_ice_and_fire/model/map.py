@@ -44,3 +44,16 @@ class Map:
                                                        cell.building.type is BuildingType.Mine
 
     return self.get_all_cells(cell_filter=cell_filter)
+
+  def get_HQ_cell(self) -> Cell:
+    if self.get_cell(0, 0).is_owned:
+      return self.get_cell(0, 0)
+    else:
+      return self.get_cell(11, 11)
+
+  def get_opponent_HQ_cell(self) -> Cell:
+    if not self.get_cell(0, 0).is_owned:
+      return self.get_cell(0, 0)
+    else:
+      return self.get_cell(11, 11)
+
