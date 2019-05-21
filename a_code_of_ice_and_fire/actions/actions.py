@@ -23,7 +23,7 @@ class Action:
 class RandomWalkAction(Action):
 
   def get_name(self):
-    return "random_walk"
+    return "RandomWalkAction"
 
   def try_execute(self, unit: Unit, environment: Environment) -> str:
     cell_filter: Callable[[Cell], bool] = lambda cell: not cell.is_void
@@ -40,7 +40,7 @@ class RandomWalkAction(Action):
 class MoveToUnownedCellAction(Action):
 
   def get_name(self):
-    return "move_to_unowned_cell"
+    return "MoveToUnownedCellAction"
 
   def try_execute(self, unit: Unit, environment: Environment) -> str:
     cell_filter: Callable[[Cell], bool] = lambda cell: not (cell.is_void or cell.is_owned)
@@ -58,7 +58,7 @@ class MoveToUnownedCellAction(Action):
 class MoveToEnemyCellAction(Action):
 
   def get_name(self):
-    return "move_to_unowned_cell"
+    return "MoveToEnemyCellAction"
 
   def try_execute(self, unit: Unit, environment: Environment) -> str:
     cell_filter: Callable[[Cell], bool] = lambda cell: not (cell.is_void or cell.is_neutral or cell.is_owned)
@@ -76,7 +76,7 @@ class MoveToEnemyCellAction(Action):
 class KillEnemyAction(Action):
 
   def get_name(self):
-    return "move_to_unowned_cell"
+    return "KillEnemyAction"
 
   def try_execute(self, unit: Unit, environment: Environment) -> str:
     cell_filter: Callable[[Cell], bool] = lambda cell: not (cell.is_void or cell.is_neutral or cell.is_owned) \
@@ -96,7 +96,7 @@ class KillEnemyAction(Action):
 class MoveToEnemyHQAction(Action):
 
   def get_name(self):
-    return "move_to_unowned_cell"
+    return "MoveToEnemyHQAction"
 
   def try_execute(self, unit: Unit, environment: Environment) -> str:
     return " ".join(["MOVE", str(unit.id), str(11), str(11)])

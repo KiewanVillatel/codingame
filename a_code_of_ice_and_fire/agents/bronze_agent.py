@@ -2,12 +2,43 @@ import random
 import sys
 from typing import Callable
 
+from ..model.building import Building, BuildingType
 from ..model.cell import Cell
 from ..model.environment import Environment
-from ..actions.actions import Action, RandomWalkAction, MoveToUnownedCellAction, MoveToEnemyCellAction, KillEnemyAction, MoveToEnemyHQAction
+from ..actions.actions import Action, RandomWalkAction, MoveToUnownedCellAction, MoveToEnemyCellAction, KillEnemyAction, \
+  MoveToEnemyHQAction
 
 
 class BronzeAgent:
+
+  def build_mines(self, environment: Environment) -> [str]:
+    owned_mines = environment.map.get_owned_mines()
+
+    mine_spot_filter: Callable[[Cell], bool] = lambda cell: cell.is_owned and \
+                                                            cell.is_active and \
+                                                            cell.is_mine_spot and \
+                                                            cell.building is None and \
+                                                            cell.unit is None
+
+    mine_spots = environment.map.get_all_cells(cell_filter=mine_spot_filter)
+
+    nb_mines = len(owned_mines)
+
+    orders = []
+
+    for mine_spot in mine_spots:
+      mine_price = 20 + 4 * nb_mines
+
+      if mine_price > environment.gold:
+        return orders
+
+      # orders.append("BUILD MINE ".format(mine_spot.x, mine_spot.y))
+      orders.append("BUILD MINE " + str(mine_spot.x) + " " + str(mine_spot.y))
+
+      environment.gold -= mine_price
+      mine_spot.building = Building(mine_spot.x, mine_spot.y, is_owned=True, type=BuildingType.Mine)
+
+    return orders
 
   def spawn(self, environment: Environment):
 
@@ -39,6 +70,8 @@ class BronzeAgent:
 
   def act(self, environment: Environment):
     orders = []
+
+    orders += self.build_mines(environment)
 
     orders += self.spawn(environment)
 

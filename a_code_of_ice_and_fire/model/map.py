@@ -2,6 +2,7 @@ from .cell import Cell
 from ..model.position import Position
 from ..model.unit import Unit
 from typing import Callable
+from ..model.building import BuildingType
 
 
 class Map:
@@ -15,6 +16,9 @@ class Map:
 
   def get_cell(self, x, y):
     return self._grid[y][x]
+
+  def get_cell_from_pos(self, pos: Position):
+    return self.get_cell(pos.x, pos.y)
 
   def is_in_grid(self, x, y):
     return 0 <= x < Map.map_size and 0 <= y < Map.map_size
@@ -36,3 +40,10 @@ class Map:
     if cell_filter is not None:
       cells = list(filter(cell_filter, cells))
     return cells
+
+  def get_owned_mines(self):
+    cell_filter: Callable[[Cell], bool] = lambda cell: cell.building is not None and \
+                                                       cell.building.is_owned and \
+                                                       cell.building.type is BuildingType.Mine
+
+    return self.get_all_cells(cell_filter=cell_filter)

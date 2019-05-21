@@ -1,5 +1,5 @@
 from .agents.bronze_agent import BronzeAgent
-from .model.building import Building
+from .model.building import Building, BuildingType
 from .model.environment import Environment
 from .model.map import Map
 from .model.unit import Unit
@@ -7,9 +7,15 @@ from .model.unit import Unit
 # Auto-generated code below aims at helping you parse
 # the standard input according to the problem statement.
 
+mine_spots = {}
 number_mine_spots = int(input())
 for i in range(number_mine_spots):
   x, y = [int(j) for j in input().split()]
+  if x not in mine_spots:
+    mine_spots[x] = {}
+  mine_spots[x][y] = True
+
+
 
 # game loop
 while True:
@@ -23,7 +29,11 @@ while True:
   for i in range(12):
     line = input()
     for j, c in enumerate(line):
-      cell = map._grid[i][j]
+      cell = map.get_cell(i, j)
+
+      if i in mine_spots and j in mine_spots[i]:
+        cell.is_mine_spot = True
+
       if c == "#":
         cell.is_void, cell.is_owned, cell.is_active, cell.is_neutral = True, False, False, False
       elif c == ".":
@@ -42,7 +52,8 @@ while True:
   building_count = int(input())
   for i in range(building_count):
     owner, building_type, x, y = [int(j) for j in input().split()]
-    building = Building(x=x, y=y, is_owned=owner == 0)
+    building_type = BuildingType(building_type)
+    building = Building(x=x, y=y, is_owned=owner == 0, type=building_type)
     map.get_cell(x, y).building = building
 
   unit_count = int(input())
