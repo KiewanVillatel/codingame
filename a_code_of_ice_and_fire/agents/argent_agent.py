@@ -8,15 +8,29 @@ from ..model.building import Building, BuildingType
 from ..model.cell import Cell
 from ..model.environment import Environment
 from ..actions.actions import Action, RandomWalkAction, MoveToUnownedCellAction, MoveToEnemyCellAction, KillEnemyAction
-from ..actions.actions import MoveToEnemyHQAction
+from ..actions.actions import MoveToEnemyHQAction, DestroyBuildingAction
 from ..model.unit import Unit
 
 
 class ArgentAgent:
 
+  """
+  Try to build towers on map, near HQ, on the mid diagonal, and near owned mines.
+  """
   def build_towers(self, environment: Environment) -> [str]:
     hq_cell = environment.map.get_HQ_cell()
-    candidate_cells = environment.map.get_adjacent_cells([hq_cell])
+
+    candidate_cells = []
+
+    # Add cells on the mid diagonal to candidate cells
+    candidate_cells += [environment.map.get_cell(11-i, i) for i in range(12)]
+
+    # Add cells near HQ to candidate cells
+    candidate_cells += environment.map.get_adjacent_cells([hq_cell])
+
+    # Add cells mines to candidate cells
+    owned_mines = environment.map.get_owned_mines()
+    candidate_cells += environment.map.get_adjacent_cells(owned_mines)
 
     orders = []
 
@@ -75,7 +89,7 @@ class ArgentAgent:
       elif environment.gold >= SPAWN_LVL_2_MIN_GOLD and len(environment.map.get_owned_units()) >= SPAWN_LVL_2_MIN_UNITS:
         level = 2
 
-      start_cells_filter: Callable[[Cell], bool] = lambda cell: cell.is_owned
+      start_cells_filter: Callable[[Cell], bool] = lambda cell: cell.is_owned and cell.is_active
 
       start_cells = environment.map.get_all_cells(cell_filter=start_cells_filter)
 
@@ -116,7 +130,8 @@ class ArgentAgent:
 
     owned_units = environment.map.get_owned_units()
 
-    actions: [Action] = [KillEnemyAction(),
+    actions: [Action] = [DestroyBuildingAction(),
+                         KillEnemyAction(),
                          MoveToEnemyCellAction(),
                          MoveToUnownedCellAction(),
                          MoveToEnemyHQAction(),

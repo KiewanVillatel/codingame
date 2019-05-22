@@ -57,3 +57,26 @@ class Map:
     else:
       return self.get_cell(11, 11)
 
+  def is_cell_protected(self, cell: Cell) -> bool :
+    tower_filter : Callable[[Cell], bool] = lambda c: c.building == BuildingType.Tower and \
+                                                      not c.is_owned()
+
+    adjacent_enemy_towers = self.get_adjacent_cells([cell], cell_filter=tower_filter)
+
+    return len(adjacent_enemy_towers) > 0
+
+  def move_unit(self, unit: Unit, cell: Cell) -> str:
+
+    is_move_valid = not cell.is_void and \
+                    (not self.is_cell_protected(cell) or unit.level == 3) and \
+                    not (cell.unit is not None and cell.unit.is_owned) and \
+                    (cell.unit is None or cell.unit.level < unit.level or unit.level == 3)
+
+    if not is_move_valid:
+      return ""
+
+    self.get_cell(unit.x, unit.y).unit = None
+    self.get_cell(cell.x, cell.y).unit = unit
+
+    return " ".join(["MOVE", str(unit.id), str(cell.x), str(cell.y)])
+
