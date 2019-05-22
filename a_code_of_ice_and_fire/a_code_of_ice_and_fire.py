@@ -1,6 +1,4 @@
-import sys
-
-from .agents.bronze_agent import BronzeAgent
+from .agents.argent_agent import ArgentAgent
 from .model.building import Building, BuildingType
 from .model.environment import Environment
 from .model.map import Map
@@ -65,7 +63,7 @@ while True:
     unit = Unit(x=x, y=y, is_owned=owner == 0, unit_id=unit_id, level=level)
     map.get_cell(x, y).unit = unit
 
-  agent = BronzeAgent()
+  agent = ArgentAgent()
 
   environment = Environment(grid=map,
                             gold=gold,
