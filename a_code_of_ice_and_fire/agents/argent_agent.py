@@ -40,7 +40,7 @@ class ArgentAgent:
     for cell in candidate_cells:
       if environment.gold < BUILD_TOWER_MIN_GOLD:
         return orders
-      if cell.building is None and cell.is_owned and cell.unit is None:
+      if cell.building is None and cell.is_owned and cell.unit is None and not cell.is_mine_spot:
         environment.gold -= 15
         cell.building = Building(cell.x, cell.y, is_owned=True, type=BuildingType.Tower)
         orders.append("BUILD TOWER {} {}".format(cell.x, cell.y))
@@ -93,8 +93,8 @@ class ArgentAgent:
 
       start_cells = environment.map.get_all_cells(cell_filter=start_cells_filter)
 
-      base_spawn_filter: Callable[[Cell], bool] = lambda cell: (
-                                                              cell.unit is None or cell.unit.level < level or level == 3) and \
+      base_spawn_filter: Callable[[Cell], bool] = lambda cell: not (cell.unit is not None and cell.unit.is_owned) and \
+                                                               (cell.unit is None or cell.unit.level < level or level == 3) and \
                                                                cell.building is None and \
                                                                not cell.is_void
 
@@ -124,8 +124,8 @@ class ArgentAgent:
   def act(self, environment: Environment):
     orders = []
 
-    orders += self.build_mines(environment)
     orders += self.build_towers(environment)
+    orders += self.build_mines(environment)
     orders += self.spawn(environment)
 
     owned_units = environment.map.get_owned_units()

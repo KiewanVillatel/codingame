@@ -1,3 +1,5 @@
+import sys
+
 from .cell import Cell
 from ..model.position import Position
 from ..model.unit import Unit
@@ -69,8 +71,10 @@ class Map:
 
     is_move_valid = not cell.is_void and \
                     (not self.is_cell_protected(cell) or unit.level == 3) and \
+                    not (cell.building is not None and cell.building.is_owned) and \
                     not (cell.unit is not None and cell.unit.is_owned) and \
-                    (cell.unit is None or cell.unit.level < unit.level or unit.level == 3)
+                    (cell.unit is None or cell.unit.level < unit.level or unit.level == 3) and \
+                    not (cell.building is not None and not cell.building.is_owned and cell.building.type is BuildingType.Tower and not unit.level == 3)
 
     if not is_move_valid:
       return ""

@@ -105,7 +105,7 @@ class MoveToEnemyHQAction(Action):
   def try_execute(self, unit: Unit, environment: Environment) -> str:
     target_cell = environment.map.get_opponent_HQ_cell()
 
-    return environment.map.move_unit(unit, target_cell)
+    return " ".join(["MOVE", str(unit.id), str(target_cell.x), str(target_cell.y)])
 
 
 class DestroyBuildingAction(Action):
