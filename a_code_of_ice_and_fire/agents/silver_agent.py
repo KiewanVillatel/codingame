@@ -20,30 +20,48 @@ class ArgentAgent:
   def build_towers(self, environment: Environment) -> [str]:
     hq_cell = environment.map.get_HQ_cell()
 
-    candidate_cells = []
+    cells_to_protect = []
 
     # Add cells on the mid diagonal to candidate cells
-    candidate_cells += [environment.map.get_cell(11-i, i) for i in range(12)]
+    cells_to_protect += [environment.map.get_cell(11 - i, i) for i in range(12)]
 
     # Add cells near HQ to candidate cells
-    candidate_cells += environment.map.get_adjacent_cells([hq_cell])
+    cells_to_protect += [hq_cell]
 
     # Add cells mines to candidate cells
     owned_mines = environment.map.get_owned_mines()
-    candidate_cells += environment.map.get_adjacent_cells(owned_mines)
+    cells_to_protect += owned_mines
 
     orders = []
 
     if len(environment.map.get_owned_units()) < BUILD_TOWER_MIN_UNITS:
       return orders
 
-    for cell in candidate_cells:
+    opponent_hq = environment.map.get_opponent_HQ_cell()
+    cells_to_protect.sort(key=lambda c: (c.x - opponent_hq.x) ** 2 + (c.y - opponent_hq.y) ** 2)
+
+    for cell_to_protect in cells_to_protect:
       if environment.gold < BUILD_TOWER_MIN_GOLD:
         return orders
-      if cell.building is None and cell.is_owned and cell.unit is None and not cell.is_mine_spot:
-        environment.gold -= 15
-        cell.building = Building(cell.x, cell.y, is_owned=True, type=BuildingType.Tower)
-        orders.append("BUILD TOWER {} {}".format(cell.x, cell.y))
+
+      # If the cell is already protected by a tower, don't build a second tower
+      if environment.map.is_cell_protected(cell_to_protect):
+        continue
+
+      cell_filter = lambda c: c.building is None and c.is_owned and c.unit is None and not c.is_mine_spot
+
+      candidate_cells = environment.map.get_adjacent_cells(positions=[cell_to_protect], cell_filter=cell_filter)
+
+      candidate_cells.sort(key=lambda c: (c.x - opponent_hq.x) ** 2 + (c.y - opponent_hq.y) ** 2)
+
+      if len(candidate_cells) == 0:
+        continue
+
+      cell = candidate_cells[0]
+
+      environment.gold -= 15
+      cell.building = Building(cell.x, cell.y, is_owned=True, type=BuildingType.Tower)
+      orders.append("BUILD TOWER {} {}".format(cell.x, cell.y))
 
     return orders
 
@@ -59,6 +77,9 @@ class ArgentAgent:
                                                             cell.unit is None
 
     mine_spots = environment.map.get_all_cells(cell_filter=mine_spot_filter)
+
+    hq = environment.map.get_HQ_cell()
+    mine_spots.sort(key=lambda c: (c.x - hq.x) ** 2 + (c.y - hq.y) ** 2)
 
     nb_mines = len(owned_mines)
 

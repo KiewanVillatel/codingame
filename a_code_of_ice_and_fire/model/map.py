@@ -59,9 +59,19 @@ class Map:
     else:
       return self.get_cell(11, 11)
 
-  def is_cell_protected(self, cell: Cell) -> bool :
-    tower_filter : Callable[[Cell], bool] = lambda c: c.building == BuildingType.Tower and \
-                                                      not c.is_owned()
+  def is_cell_protected(self, cell: Cell) -> bool:
+    tower_filter: Callable[[Cell], bool] = lambda c: c.building is not None and \
+                                                     c.building.type == BuildingType.Tower and \
+                                                     c.building.is_owned
+
+    adjacent_towers = self.get_adjacent_cells([cell], cell_filter=tower_filter)
+
+    return len(adjacent_towers) > 0
+
+  def is_opponent_cell_protected(self, cell: Cell) -> bool:
+    tower_filter: Callable[[Cell], bool] = lambda c: c.building is not None and \
+                                                     c.building.type == BuildingType.Tower and \
+                                                     not c.building.is_owned
 
     adjacent_enemy_towers = self.get_adjacent_cells([cell], cell_filter=tower_filter)
 
@@ -70,11 +80,12 @@ class Map:
   def move_unit(self, unit: Unit, cell: Cell) -> str:
 
     is_move_valid = not cell.is_void and \
-                    (not self.is_cell_protected(cell) or unit.level == 3) and \
+                    (not self.is_opponent_cell_protected(cell) or unit.level == 3) and \
                     not (cell.building is not None and cell.building.is_owned) and \
                     not (cell.unit is not None and cell.unit.is_owned) and \
                     (cell.unit is None or cell.unit.level < unit.level or unit.level == 3) and \
-                    not (cell.building is not None and not cell.building.is_owned and cell.building.type is BuildingType.Tower and not unit.level == 3)
+                    not (
+                          cell.building is not None and not cell.building.is_owned and cell.building.type is BuildingType.Tower and not unit.level == 3)
 
     if not is_move_valid:
       return ""
@@ -83,4 +94,3 @@ class Map:
     self.get_cell(cell.x, cell.y).unit = unit
 
     return " ".join(["MOVE", str(unit.id), str(cell.x), str(cell.y)])
-

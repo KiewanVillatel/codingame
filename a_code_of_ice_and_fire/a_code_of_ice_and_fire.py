@@ -1,4 +1,4 @@
-from .agents.argent_agent import ArgentAgent
+from .agents.silver_agent import ArgentAgent
 from .model.building import Building, BuildingType
 from .model.environment import Environment
 from .model.map import Map
